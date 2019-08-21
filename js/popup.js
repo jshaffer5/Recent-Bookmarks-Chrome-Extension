@@ -2,101 +2,176 @@ var backgroundPage = chrome.extension.getBackgroundPage();
 
 (function() {
   $(function() {
-    var $doc, $groups, $list, $manager, dateString, defaultFaviconUrl, deleteBookmark, faviconPrefix, focusIndex, getBookmarks, isBookmarklet, isToday, lastDate, months, options, weekdays;
-    weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    faviconPrefix = 'https://www.google.com/s2/favicons?domain=';
-    defaultFaviconUrl = 'default.png';
+    var $doc,
+      $groups,
+      $list,
+      $manager,
+      dateString,
+      defaultFaviconUrl,
+      deleteBookmark,
+      faviconPrefix,
+      focusIndex,
+      getBookmarks,
+      isBookmarklet,
+      isToday,
+      lastDate,
+      months,
+      options,
+      weekdays;
+    weekdays = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ];
+    months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
+    faviconPrefix = "https://www.google.com/s2/favicons?domain=";
+    defaultFaviconUrl = "default.png";
     options = window.options.load();
     lastDate = null;
     focusIndex = -1;
     $doc = $(document);
-    $manager = $('#manager');
-    $groups = $('#groups');
+    $manager = $("#manager");
+    $groups = $("#groups");
     $list = null;
     dateString = function(d) {
-      return "" + weekdays[d.getDay()] + ", " + months[d.getMonth()] + " " + (d.getDate());
+      return (
+        "" +
+        weekdays[d.getDay()] +
+        ", " +
+        months[d.getMonth()] +
+        " " +
+        d.getDate()
+      );
     };
     isToday = function(d) {
       var today;
       today = new Date();
-      return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+      return (
+        d.getDate() === today.getDate() &&
+        d.getMonth() === today.getMonth() &&
+        d.getFullYear() === today.getFullYear()
+      );
     };
     isBookmarklet = function(url) {
-      return url.toLowerCase().indexOf('javascript') === 0;
+      return url.toLowerCase().indexOf("javascript") === 0;
     };
     getBookmarks = function() {
-      return chrome.bookmarks.getRecent(parseInt(options.count), function(results) {
+      return chrome.bookmarks.getRecent(parseInt(options.count), function(
+        results
+      ) {
         $groups.empty();
         return $.each(results, function(i, result) {
-          var $close, $group, $groupTitle, $icon, $link, $title, dateTime, domain, faviconUrl, listItem, titleText,
+          var $close,
+            $group,
+            $groupTitle,
+            $icon,
+            $link,
+            $title,
+            dateTime,
+            domain,
+            faviconUrl,
+            listItem,
+            titleText,
             _this = this;
           dateTime = new Date(result.dateAdded);
-          if (!lastDate || dateTime.getDate() !== lastDate.getDate() || dateTime.getMonth() !== lastDate.getMonth() || dateTime.getFullYear() !== lastDate.getFullYear()) {
+          if (
+            !lastDate ||
+            dateTime.getDate() !== lastDate.getDate() ||
+            dateTime.getMonth() !== lastDate.getMonth() ||
+            dateTime.getFullYear() !== lastDate.getFullYear()
+          ) {
             lastDate = dateTime;
             $group = $('<li class="group"></li>');
-            $groupTitle = $('<h2></h2>');
+            $groupTitle = $("<h2></h2>");
             $group.append($groupTitle);
             titleText = dateString(dateTime);
             if (isToday(dateTime)) {
-              titleText += ' - Today';
+              titleText += " - Today";
             }
             $groupTitle.text(titleText);
-            $list = $('<ul></ul>');
+            $list = $("<ul></ul>");
             $group.append($list);
             $groups.append($group);
           }
-          listItem = $('<li></li>');
+          listItem = $("<li></li>");
           $list.append(listItem);
           $link = $('<a href="#" class="link"></a>');
           listItem.append($link);
-          $link.attr('id', result.id);
-          $link.attr('href', result.url);
-          $link.attr('title', dateTime.toString());
-          $link.attr('tabindex', 0);
-          $link.on('click', function(e) {
+          $link.attr("id", result.id);
+          $link.attr("href", result.url);
+          $link.attr("title", dateTime.toString());
+          $link.attr("tabindex", 0);
+          $link.on("click", function(e) {
             e.preventDefault();
             if (isBookmarklet(result.url)) {
               chrome.tabs.update({
                 url: result.url
               });
             } else {
-
               // Get the active tab, check if it is a new empty tab, if it is empty open result.url in current window
-              const newTabUrl = 'chrome://newtab/';
+              const newTabUrl = "chrome://newtab/";
               var activeTabUrl, activeTabId;
-              chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+              chrome.tabs.query({ active: true, currentWindow: true }, function(
+                tabs
+              ) {
                 tabs.forEach(function(tab) {
-
                   // since only one tab should be active and in the current window at once
-                // the return variable should only have one entry
-                activeTabUrl = tab.url;
-                activeTabId = tab.id; // or do whatever you need
-                backgroundPage.console.log('activeTab url (inside query): ', tab.url);
+                  // the return variable should only have one entry
+                  activeTabUrl = tab.url;
+                  activeTabId = tab.id; // or do whatever you need
+                  // DEBUGGING CONSOLE LOG
+                  if (backgroundPage) {
+                    backgroundPage.console.log(
+                      "activeTab url (inside query): ",
+                      tab.url
+                    );
+                  }
                 });
 
                 // Current tab is a new empty tab, open bookmark in current window
-              if (activeTabUrl == newTabUrl) {
-                chrome.tabs.update(
-                  activeTabId, 
-                  {url: result.url}
-                );
-                backgroundPage.console.log("TRUE, NEW EMPTY");
-                backgroundPage.console.log('activeTabUrl (after query): ', activeTabUrl);
-                backgroundPage.console.log('newTabUrl: ', newTabUrl);
-              } else {
-                chrome.tabs.create({
-                  url: result.url
-                });
-                backgroundPage.console.log("FALSE, NOT EMPTY");
-                backgroundPage.console.log('activeTabUrl (after query): ', activeTabUrl);
-                backgroundPage.console.log('newTabUrl: ', newTabUrl);
+                if (activeTabUrl == newTabUrl) {
+                  chrome.tabs.update(activeTabId, { url: result.url });
+                  // DEBUGGING CONSOLE LOGS
+                  if (backgroundPage) {
+                    backgroundPage.console.log("TRUE, NEW EMPTY");
+                    backgroundPage.console.log(
+                      "activeTabUrl (after query): ",
+                      activeTabUrl
+                    );
+                    backgroundPage.console.log("newTabUrl: ", newTabUrl);
+                  }
+                } else {
+                  chrome.tabs.create({
+                    url: result.url
+                  });
+                  // DEBUGGING CONSOLE LOGS
+                  if (backgroundPage) {
+                    backgroundPage.console.log("FALSE, NOT EMPTY");
+                    backgroundPage.console.log(
+                      "activeTabUrl (after query): ",
+                      activeTabUrl
+                    );
+                    backgroundPage.console.log("newTabUrl: ", newTabUrl);
+                  }
                 }
               });
-              
-              
-
-
             }
             return window.close();
           });
@@ -106,10 +181,10 @@ var backgroundPage = chrome.extension.getBackgroundPage();
             domain = domain != null ? domain : result.url;
             faviconUrl = faviconPrefix + domain;
           }
-          $icon = $('<img />');
+          $icon = $("<img />");
           $link.append($icon);
           setTimeout(function() {
-            return $icon.attr('src', faviconUrl);
+            return $icon.attr("src", faviconUrl);
           }, 1);
           $title = $('<span class="title">&nbsp;</span>');
           $link.append($title);
@@ -118,7 +193,7 @@ var backgroundPage = chrome.extension.getBackgroundPage();
           }
           $close = $('<a class="delete icon-remove-sign"></a>');
           $link.append($close);
-          return $close.on('click', function(e) {
+          return $close.on("click", function(e) {
             e.preventDefault();
             e.stopImmediatePropagation();
             return deleteBookmark($link);
@@ -128,11 +203,11 @@ var backgroundPage = chrome.extension.getBackgroundPage();
     };
     deleteBookmark = function(link) {
       var id;
-      if (confirm('Are you sure you want to delete this bookmark?')) {
-        id = link.attr('id');
+      if (confirm("Are you sure you want to delete this bookmark?")) {
+        id = link.attr("id");
         return chrome.bookmarks.remove(id, function() {
           if (link.siblings().length === 0) {
-            return link.parents('.group').slideUp(function() {
+            return link.parents(".group").slideUp(function() {
               $(this).remove();
               return getBookmarks();
             });
@@ -145,40 +220,42 @@ var backgroundPage = chrome.extension.getBackgroundPage();
         });
       }
     };
-    $manager.bind('click', function() {
+    $manager.bind("click", function() {
       return chrome.tabs.create({
-        url: 'chrome://bookmarks/'
+        url: "chrome://bookmarks/"
       });
     });
-    $manager.toggle(options.manager === 'true');
-    $doc.bind('click', function() {
+    $manager.toggle(options.manager === "true");
+    $doc.bind("click", function() {
       if (focusIndex === -1) {
-        focusIndex = $('a.link').index($('a.link:first'));
+        focusIndex = $("a.link").index($("a.link:first"));
       }
-      return $('a.link').eq(focusIndex).focus();
+      return $("a.link")
+        .eq(focusIndex)
+        .focus();
     });
-    $doc.bind('keyup', function(e) {
+    $doc.bind("keyup", function(e) {
       var keyCode;
       keyCode = e.keyCode || e.which;
       if (keyCode === 9) {
         return e.preventDefault();
       }
     });
-    $doc.bind('keydown', function(e) {
+    $doc.bind("keydown", function(e) {
       var focused, lastIndex, links;
-      links = $('a.link');
-      focused = $('a.link:focus');
-      lastIndex = links.index($('a.link:last'));
+      links = $("a.link");
+      focused = $("a.link:focus");
+      lastIndex = links.index($("a.link:last"));
       if (focused.length > 0) {
         focusIndex = links.index(focused);
       }
       if (e.which === 40 || e.which === 9) {
         e.preventDefault();
-        focusIndex = focusIndex !== lastIndex ? focusIndex += 1 : 0;
+        focusIndex = focusIndex !== lastIndex ? (focusIndex += 1) : 0;
         return links.eq(focusIndex).focus();
       } else if (e.which === 38) {
         e.preventDefault();
-        focusIndex = focusIndex !== 0 ? focusIndex -= 1 : lastIndex;
+        focusIndex = focusIndex !== 0 ? (focusIndex -= 1) : lastIndex;
         return links.eq(focusIndex).focus();
       } else if (e.which === 46 || e.which === 8) {
         e.preventDefault();
@@ -187,5 +264,4 @@ var backgroundPage = chrome.extension.getBackgroundPage();
     });
     return getBookmarks();
   });
-
-}).call(this);
+}.call(this));
